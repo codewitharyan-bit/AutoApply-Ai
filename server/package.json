@@ -1,0 +1,33 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@clerk/backend": "^3.8.2",
+    "@clerk/express": "^2.1.30",
+    "@google/genai": "^2.10.0",
+    "@supabase/server": "^1.1.0",
+    "@supabase/supabase-js": "^2.108.2",
+    "axios": "^1.18.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.11.0",
+    "multer": "^2.2.0",
+    "ngrok": "^5.0.0-beta.2",
+    "nodemon": "^3.1.14",
+    "pdf-parse": "^2.4.5",
+    "svix": "^1.96.0",
+    "zod": "^4.4.3"
+  }
+}
