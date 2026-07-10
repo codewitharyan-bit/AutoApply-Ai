@@ -1,3 +1,4 @@
+const asyncHandler = require('../middleware/asyncHandler');
 const {
   generateRecommendations,
 } = require("../services/jobRecommendation.service");
@@ -6,48 +7,27 @@ const {
   explainJobMatch,
 } = require("../services/jobExplanation.service");
 
-const generateRecommendationsController = async (
-  req,
-  res
-) => {
-  try {
-    const recommendations =
-      await generateRecommendations(req.clerkId);
+const generateRecommendationsController = asyncHandler(async (req, res) => {
+  const recommendations =
+    await generateRecommendations(req.clerkId);
 
-    res.json({
-      success: true,
-      data: recommendations,
-    });
-  } catch (err) {
-    console.error(err);
+  res.json({
+    success: true,
+    data: recommendations,
+  });
+});
 
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-};
+const getJobExplanation = asyncHandler(async (req, res) => {
+  const explanation = await explainJobMatch(
+    req.clerkId,
+    req.params.jobId,
+  );
 
-const getJobExplanation = async (req, res) => {
-  try {
-    const explanation = await explainJobMatch(
-      req.clerkId,
-      req.params.jobId,
-    );
-
-    res.json({
-      success: true,
-      data: explanation,
-    });
-  } catch (err) {
-    console.error(err);
-
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
-  }
-};
+  res.json({
+    success: true,
+    data: explanation,
+  });
+});
 
 module.exports = {
   generateRecommendationsController,

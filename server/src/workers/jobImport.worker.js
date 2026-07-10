@@ -10,9 +10,7 @@ const { runJobImport } = require("../services/jobImport.service");
       throw new Error("Missing clerkId. Pass it as: node src/workers/jobImport.worker.js <clerkId> or set CLERK_ID in environment.");
     }
 
-    const result = await runJobImport(clerkId);
-
-    console.log(result);
+    await runJobImport(clerkId);
 
   } catch (err) {
 

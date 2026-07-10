@@ -1,12 +1,10 @@
 require('dotenv/config')
-console.log('CWD:', process.cwd());
-console.log('CLERK_SECRET_KEY loaded:', !!process.env.CLERK_SECRET_KEY);
 const express = require('express')
 const cors = require('cors')
 const morgan = require('morgan')
+const { clerkMiddleware, getAuth } = require('@clerk/express')
 const withSupabase = require('./middleware/withSupabase')
 const webhookRoutes = require('./routes/webhook.route')
-const { clerkMiddleware } = require('@clerk/express')
 const profileRoutes = require('./routes/profile.route')
 const jobRoutes = require('./routes/job.route')
 const dashboardRoutes = require("./routes/dashboard.route");
@@ -14,8 +12,7 @@ const applicationRoutes = require("./routes/application.route");
 const resumeRoutes = require("./routes/resume.route");
 const recommendationRoutes = require("./routes/recommendation.route");
 const careerAnalysisRoutes = require("./routes/careerAnalysis.route");
-
-
+const autoApplyRoutes = require('./routes/autoApply.route');
 
 
 
@@ -42,7 +39,7 @@ app.use("/api/applications", applicationRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use( "/api/recommendations",recommendationRoutes);
 app.use("/api/career-analysis", careerAnalysisRoutes);
-
+app.use('/api/auto-apply', autoApplyRoutes);
 
 app.get(
   '/api/health',
@@ -52,15 +49,8 @@ app.get(
   },
 )
 
-const { getAuth } = require("@clerk/express");
-
 app.get("/api/debug-auth", (req, res) => {
   const authHeader = req.headers.authorization || "";
-
-  console.log("=== DEBUG ===");
-  console.log("Token prefix:", authHeader.substring(0, 80));
-  console.log("Auth:", getAuth(req));
-
   res.json({
     auth: getAuth(req),
     authorization: authHeader,
@@ -86,5 +76,7 @@ app.get(
 )
 
 
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler);
 
 module.exports = app

@@ -1,3 +1,4 @@
+const asyncHandler = require('../middleware/asyncHandler');
 const {
     saveApplication,
     getApplicationsByClerkId,
@@ -6,108 +7,69 @@ const {
     deleteApplication: deleteApplicationService,
 } = require("../services/application.service");
 
-const createApplication = async (req, res) => {
-    try {
-        const { jobId } = req.body;
+const createApplication = asyncHandler(async (req, res) => {
+    const { jobId } = req.body;
 
-        if (!jobId) {
-            return res.status(400).json({
-                success: false,
-                message: "Job ID is required.",
-            });
-        }
-
-        const application = await saveApplication(
-            req.clerkId,
-            jobId
-        );
-
-        return res.status(201).json({
-            success: true,
-            data: application,
-        });
-
-    } catch (err) {
-        console.error(err);
-
-        return res.status(500).json({
+    if (!jobId) {
+        return res.status(400).json({
             success: false,
-            message: err.message,
+            message: "Job ID is required.",
         });
     }
-};
 
-const getApplications = async (req, res) => {
-    try {
-        const applications = await getApplicationsByClerkId(req.clerkId);
+    const application = await saveApplication(
+        req.clerkId,
+        jobId
+    );
 
-        res.json({
-            success: true,
-            data: applications,
-        });
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message,
-        });
-    }
-};
+    return res.status(201).json({
+        success: true,
+        data: application,
+    });
+});
 
+const getApplications = asyncHandler(async (req, res) => {
+    const applications = await getApplicationsByClerkId(req.clerkId);
 
-const getApplication = async (req, res) => {
-    try {
-        const application = await getApplicationById(
-            req.clerkId,
-            req.params.id
-        );
+    res.json({
+        success: true,
+        data: applications,
+    });
+});
 
-        res.json({
-            success: true,
-            data: application,
-        });
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message,
-        });
-    }
-};
+const getApplication = asyncHandler(async (req, res) => {
+    const application = await getApplicationById(
+        req.clerkId,
+        req.params.id
+    );
 
-const updateApplication = async (req, res) => {
-    try {
-        const application = await updateApplicationStatus(
-            req.clerkId,
-            req.params.id,
-            req.body.status
-        );
+    res.json({
+        success: true,
+        data: application,
+    });
+});
 
-        res.json({
-            success: true,
-            data: application,
-        });
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message,
-        });
-    }
-};
+const updateApplication = asyncHandler(async (req, res) => {
+    const application = await updateApplicationStatus(
+        req.clerkId,
+        req.params.id,
+        req.body.status
+    );
 
-const deleteApplication = async (req, res) => {
-    try {
-        await deleteApplicationService(req.clerkId, req.params.id);
+    res.json({
+        success: true,
+        data: application,
+    });
+});
 
-        res.json({
-            success: true,
-            message: "Application deleted successfully.",
-        });
-    } catch (err) {
-        res.status(500).json({
-            success: false,
-            message: err.message,
-        });
-    }
-};
+const deleteApplication = asyncHandler(async (req, res) => {
+    await deleteApplicationService(req.clerkId, req.params.id);
+
+    res.json({
+        success: true,
+        message: "Application deleted successfully.",
+    });
+});
 
 module.exports = {
     createApplication,

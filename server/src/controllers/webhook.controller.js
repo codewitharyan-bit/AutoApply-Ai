@@ -19,7 +19,6 @@ const clerkWebhook = async (req, res) => {
     })
 
     const { type, data } = payload
-    console.log(`Webhook received: ${type}`)
 
     switch (type) {
       case 'user.created': {
@@ -27,7 +26,6 @@ const clerkWebhook = async (req, res) => {
         const email = email_addresses?.[0]?.email_address
         const name = [first_name, last_name].filter(Boolean).join(' ')
         await createUser({ clerk_id, email, name })
-        console.log(`User created: ${clerk_id}`)
         break
       }
       case 'user.updated': {
@@ -35,17 +33,13 @@ const clerkWebhook = async (req, res) => {
         const email = email_addresses?.[0]?.email_address
         const name = [first_name, last_name].filter(Boolean).join(' ')
         await updateUser({ clerk_id, email, name })
-        console.log(`User updated: ${clerk_id}`)
         break
       }
       case 'user.deleted': {
         const { id: clerk_id } = data
         await deleteUser({ clerk_id })
-        console.log(`User deleted: ${clerk_id}`)
         break
       }
-      default:
-        console.log(`Unhandled event type: ${type}`)
     }
 
     return res.status(200).json({ success: true })

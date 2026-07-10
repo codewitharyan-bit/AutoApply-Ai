@@ -70,7 +70,6 @@ const deleteUser = async ({ clerk_id }) => {
 }
 
 const getUserByClerkId = async (clerkId) => {
-  console.log("Looking up Clerk ID:", clerkId);
   const { data, error } = await supabase
     .from("users")
     .select("*")
