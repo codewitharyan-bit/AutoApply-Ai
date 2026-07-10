@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import HighlightText from '../HighlightText'
 
 const APPLICATION_STATUSES = ['saved', 'applied', 'interview', 'offer', 'rejected', 'withdrawn']
 
@@ -20,7 +21,7 @@ function getRelativeTime(dateString) {
   return `${Math.floor(diffDays / 7)}w ago`
 }
 
-export default function ApplicationCard({ application, index, onStatusChange, onDelete }) {
+export default function ApplicationCard({ application, index, onStatusChange, onDelete, highlightQuery }) {
   const navigate = useNavigate()
   const [updating, setUpdating] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -58,12 +59,16 @@ export default function ApplicationCard({ application, index, onStatusChange, on
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-sm font-bold text-text truncate">{job.title || 'Unknown Position'}</h3>
+            <h3 className="text-sm font-bold text-text truncate">
+              {highlightQuery ? <HighlightText text={job.title || 'Unknown Position'} query={highlightQuery} /> : (job.title || 'Unknown Position')}
+            </h3>
             {job.salary && (
               <span className="text-[10px] font-medium text-emerald-400 shrink-0">{job.salary}</span>
             )}
           </div>
-          <p className="text-xs text-text-secondary truncate">{job.company}</p>
+          <p className="text-xs text-text-secondary truncate">
+            {highlightQuery ? <HighlightText text={job.company} query={highlightQuery} /> : job.company}
+          </p>
           <div className="flex items-center gap-2 mt-0.5">
             {job.location && (
               <span className="text-[10px] text-text-secondary/60 flex items-center gap-0.5">

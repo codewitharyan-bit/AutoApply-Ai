@@ -4,6 +4,7 @@ import { useAuth } from '@clerk/clerk-react'
 import { getFreshToken } from '../utils/auth'
 import { saveApplication } from '../services/application'
 import CircularScore from './CircularScore'
+import HighlightText from './HighlightText'
 
 function getScoreLabel(score) {
   if (score == null) return ''
@@ -18,7 +19,7 @@ function formatReason(reason) {
   return reason.split('.').filter(s => s.trim().length > 0)
 }
 
-export default function JobCard({ job, index = 0, onViewDetails }) {
+export default function JobCard({ job, index = 0, onViewDetails, highlightQuery }) {
   const { getToken } = useAuth()
   const [saveState, setSaveState] = useState('idle')
   const [error, setError] = useState(null)
@@ -66,12 +67,16 @@ export default function JobCard({ job, index = 0, onViewDetails }) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-sm font-bold text-white truncate group-hover:text-[#7C3AED] transition-colors">{job.title}</h4>
+                  <h4 className="text-sm font-bold text-white truncate group-hover:text-[#7C3AED] transition-colors">
+                    {highlightQuery ? <HighlightText text={job.title} query={highlightQuery} /> : job.title}
+                  </h4>
                   {job.posted && (
                     <span className="text-[10px] text-[#A1A1AA]/60 shrink-0">{job.posted}</span>
                   )}
                 </div>
-                <p className="text-xs text-[#A1A1AA] mt-0.5">{job.company}</p>
+                <p className="text-xs text-[#A1A1AA] mt-0.5">
+                  {highlightQuery ? <HighlightText text={job.company} query={highlightQuery} /> : job.company}
+                </p>
               </div>
               <div className="flex flex-col items-center shrink-0">
                 <CircularScore score={matchScore} size={52} strokeWidth={4} />

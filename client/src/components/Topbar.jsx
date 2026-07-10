@@ -24,7 +24,7 @@ export default function Topbar({ pipeline }) {
   return (
     <header className="hidden md:block fixed top-0 left-64 right-0 z-30 bg-dark/80 backdrop-blur-xl border-b border-border">
       <div className="flex items-center justify-between h-14 px-6 max-w-[1440px] mx-auto">
-        {/* Brand + Search */}
+        {/* Brand */}
         <div className="flex items-center gap-6 flex-1">
           <button onClick={() => navigate('/')} className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
             <div className="w-6 h-6 rounded-md bg-gradient-to-br from-primary to-accent flex items-center justify-center">
@@ -32,19 +32,6 @@ export default function Topbar({ pipeline }) {
             </div>
             <span className="text-sm font-bold text-text">AutoApply</span>
           </button>
-
-          <div className="relative flex-1 max-w-md">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-sm text-text-secondary/60">search</span>
-            <input
-              type="text"
-              placeholder="Search jobs, skills, companies..."
-              className="w-full bg-white/[0.04] border border-border rounded-lg pl-9 pr-3 py-1.5 text-sm text-text placeholder-text-secondary/40 focus:outline-none focus:border-primary/40 transition-colors"
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] text-text-secondary/40">
-              <span className="px-1 py-0.5 rounded bg-white/[0.04] border border-border font-mono">⌘</span>
-              <span className="px-1 py-0.5 rounded bg-white/[0.04] border border-border font-mono">K</span>
-            </div>
-          </div>
         </div>
 
         {/* Right Section */}

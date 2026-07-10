@@ -266,6 +266,16 @@ const tryLookup = (s) => {
   if (NORMALIZATION_MAP.has(normalized)) return NORMALIZATION_MAP.get(normalized);
   const stripped = stripVersion(s);
   if (stripped !== s && NORMALIZATION_MAP.has(stripped)) return NORMALIZATION_MAP.get(stripped);
+  const words = s.split(/[\s_-]+/);
+  if (words.length > 1) {
+    const resolved = words.map(w => {
+      const clean = w.replace(/[^a-z0-9]/g, '');
+      return NORMALIZATION_MAP.get(clean) || NORMALIZATION_MAP.get(w) || null;
+    });
+    if (resolved.every(r => r !== null && r === resolved[0])) {
+      return resolved[0];
+    }
+  }
   return null;
 };
 

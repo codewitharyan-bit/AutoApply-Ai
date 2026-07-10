@@ -7,6 +7,7 @@ const navItems = [
   { id: 'applications', label: 'Applications', icon: 'description' },
   { id: 'resume', label: 'Resume', icon: 'badge' },
   { id: 'ai-recommendations', label: 'AI Recommendations', icon: 'auto_awesome' },
+  { id: 'auto-apply', label: 'Auto Apply', icon: 'bolt' },
   { id: 'profile', label: 'Profile', icon: 'person' },
 ]
 

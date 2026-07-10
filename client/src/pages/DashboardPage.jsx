@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useAuth, useUser } from '@clerk/clerk-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate, useLocation } from 'react-router-dom'
@@ -6,9 +6,14 @@ import { getFreshToken } from '../utils/auth'
 import { getDashboard } from '../services/dashboard'
 import { getCareerAnalysis, generateCareerAnalysis } from '../services/careerAnalysis'
 import { getProfile, updateProfile } from '../services/profile'
-import { getJobs, getJob, importJobs } from '../services/job'
+import { getJobs, importJobs } from '../services/job'
 import { getApplications, getApplication, updateApplication, deleteApplication } from '../services/application'
 import { getResume } from '../services/resume'
+import getGreeting from '../utils/greeting'
+import useLocalSearch from '../hooks/useLocalSearch'
+import useKeyboardShortcut from '../hooks/useKeyboardShortcut'
+import SearchBar from '../components/SearchBar'
+import HighlightText from '../components/HighlightText'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import MetricCard from '../components/MetricCard'
@@ -21,6 +26,7 @@ import AIInsights from '../components/AIInsights'
 import CareerIntelligenceCard from '../components/CareerIntelligenceCard'
 import QuickStatCard from '../components/QuickStatCard'
 import CareerSnapshot from '../components/CareerSnapshot'
+import AutoApplyView from '../components/autoApply/AutoApplyView'
 
 function getRelativeTime(dateString) {
   if (!dateString) return null
@@ -188,9 +194,9 @@ function DashboardView({ dashboardData, onNavigate, onImportJobs, importState, o
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-text">
-            Welcome back, {user?.firstName || 'there'} <span className="inline-block">👋</span>
+            {getGreeting(user?.firstName || 'there')}
           </h1>
-          <p className="text-sm text-text-secondary mt-0.5">AI-powered job automation command center</p>
+          <p className="text-sm text-text-secondary mt-0.5">Here's what's happening with your job search today.</p>
         </div>
         <div className="flex items-center gap-2">
           {pipelineStatusItems.map((s) => (
@@ -386,67 +392,11 @@ function DashboardView({ dashboardData, onNavigate, onImportJobs, importState, o
   )
 }
 
-function JobDetailPanel({ job, onClose }) {
-  if (!job) return null
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-[#0A0A0F] border border-border rounded-xl p-5 mb-5"
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 border border-border flex items-center justify-center">
-            {job.logo ? (
-              <img src={job.logo} alt={job.company} className="w-full h-full object-cover rounded-xl" />
-            ) : (
-              <span className="text-lg font-bold text-primary">{job.company?.charAt(0) || '?'}</span>
-            )}
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-text">{job.title}</h2>
-            <p className="text-sm text-text-secondary">{job.company} &middot; {job.location}</p>
-          </div>
-        </div>
-        <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white/[0.04] border border-border flex items-center justify-center hover:bg-white/[0.06] transition-colors">
-          <span className="material-symbols-outlined text-sm text-text-secondary">close</span>
-        </button>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-4">
-        <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/[0.04] border border-border text-text-secondary">{job.type || 'Full-time'}</span>
-        {job.salary && <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{job.salary}</span>}
-        {job.match && <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">{job.match}% AI Match</span>}
-      </div>
-
-      {job.description && (
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-text mb-2">Description</h3>
-          <p className="text-xs text-text-secondary leading-relaxed whitespace-pre-line">{job.description}</p>
-        </div>
-      )}
-
-      {job.missingSkills?.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-text mb-2">Missing Skills</h3>
-          <div className="flex flex-wrap gap-1">
-            {job.missingSkills.map((skill) => (
-              <span key={skill} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </motion.div>
-  )
-}
-
 function JobsView({ getToken }) {
   const [allJobs, setAllJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [selectedJob, setSelectedJob] = useState(null)
+  const navigate = useNavigate()
 
   const fetchJobs = useCallback(async () => {
     setLoading(true)
@@ -466,19 +416,35 @@ function JobsView({ getToken }) {
     fetchJobs()
   }, [fetchJobs])
 
-  const handleJobClick = async (job) => {
-    if (selectedJob?.id === job.id) {
-      setSelectedJob(null)
-      return
-    }
-    try {
-      const token = await getFreshToken(getToken)
-      const detail = await getJob(token, job.id)
-      setSelectedJob(detail)
-    } catch {
-      setSelectedJob(job)
-    }
-  }
+  const buildJobSearchText = useCallback(
+    (job) =>
+      [
+        job.title,
+        job.company,
+        job.location,
+        job.description,
+        ...(job.required_skills ?? []),
+        ...(job.technologies ?? []),
+      ]
+        .filter(Boolean)
+        .join(' '),
+    []
+  )
+
+  const { query, setQuery, filteredItems: filteredJobs, clearSearch, searchRef } = useLocalSearch({
+    items: allJobs,
+    buildSearchText: buildJobSearchText,
+  })
+
+  useKeyboardShortcut('k', () => {
+    searchRef.current?.focus()
+    searchRef.current?.select()
+  })
+
+  const displayJobs = filteredJobs.map((job) => ({
+    ...job,
+    posted: getRelativeTime(job.created_at),
+  }))
 
   if (loading) {
     return (
@@ -509,27 +475,44 @@ function JobsView({ getToken }) {
     )
   }
 
-  const jobs = (allJobs || []).map((job) => ({
-    ...job,
-    posted: getRelativeTime(job.created_at),
-  }))
-
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
       <h1 className="text-2xl md:text-3xl font-bold text-text mb-1">Jobs</h1>
       <p className="text-sm text-text-secondary mb-6">Browse and manage job listings</p>
 
-      <JobDetailPanel job={selectedJob} onClose={() => setSelectedJob(null)} />
+      <SearchBar
+        ref={searchRef}
+        value={query}
+        onChange={setQuery}
+        onClear={clearSearch}
+        placeholder="Search jobs, companies or skills..."
+        shortcut="⌘K"
+      />
 
-      {jobs.length === 0 ? (
+      {query.trim() && (
+        <p className="text-xs text-text-secondary mb-3">
+          Showing {displayJobs.length} of {allJobs.length} jobs
+        </p>
+      )}
+
+      {allJobs.length === 0 ? (
         <div className="bg-[#0A0A0F] border border-border rounded-xl p-8 text-center">
           <span className="material-symbols-outlined text-3xl text-text-secondary/30 mb-2">work</span>
           <p className="text-sm text-text-secondary">No jobs found</p>
         </div>
+      ) : displayJobs.length === 0 ? (
+        <div className="bg-[#0A0A0F] border border-border rounded-xl p-8 text-center">
+          <span className="material-symbols-outlined text-3xl text-text-secondary/30 mb-2">search_off</span>
+          <p className="text-sm text-text-secondary">No jobs found</p>
+          <p className="text-xs text-text-secondary/60 mt-1">Try another keyword.</p>
+          <button onClick={clearSearch} className="mt-3 px-4 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
+            Clear Search
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {jobs.map((job, i) => (
-            <JobCard key={job.id || job.job_url || i} job={job} index={i} onViewDetails={() => handleJobClick(job)} />
+          {displayJobs.map((job, i) => (
+            <JobCard key={job.id || job.job_url || i} job={job} index={i} onViewDetails={() => navigate(`/jobs/${job.id}`)} highlightQuery={query} />
           ))}
         </div>
       )}
@@ -555,6 +538,7 @@ function ApplicationsView({ getToken }) {
   const [selectedApp, setSelectedApp] = useState(null)
   const [updating, setUpdating] = useState(null)
   const [deleting, setDeleting] = useState(null)
+  const [selectedStatus, setSelectedStatus] = useState('all')
 
   const fetchApps = useCallback(async () => {
     setLoading(true)
@@ -573,6 +557,29 @@ function ApplicationsView({ getToken }) {
   useEffect(() => {
     fetchApps()
   }, [fetchApps])
+
+  const buildAppSearchText = useCallback(
+    (app) =>
+      [app.jobs?.title, app.jobs?.company, app.status]
+        .filter(Boolean)
+        .join(' '),
+    []
+  )
+
+  const { query, setQuery, filteredItems: textFilteredApps, clearSearch, searchRef } = useLocalSearch({
+    items: apps,
+    buildSearchText: buildAppSearchText,
+  })
+
+  useKeyboardShortcut('k', () => {
+    searchRef.current?.focus()
+    searchRef.current?.select()
+  })
+
+  const filteredApps = useMemo(() => {
+    if (selectedStatus === 'all') return textFilteredApps
+    return textFilteredApps.filter((app) => app.status === selectedStatus)
+  }, [textFilteredApps, selectedStatus])
 
   const handleStatusChange = async (appId, newStatus) => {
     setUpdating(appId)
@@ -651,6 +658,27 @@ function ApplicationsView({ getToken }) {
       <h1 className="text-2xl md:text-3xl font-bold text-text mb-1">Applications</h1>
       <p className="text-sm text-text-secondary mb-6">Track your submitted applications</p>
 
+      <SearchBar
+        ref={searchRef}
+        value={query}
+        onChange={setQuery}
+        onClear={clearSearch}
+        placeholder="Search company or role..."
+        shortcut="⌘K"
+      />
+
+      {query.trim() && (
+        <p className="text-xs text-text-secondary mb-3">
+          Showing {filteredApps.length} matching applications
+        </p>
+      )}
+
+      <ApplicationFilters
+        total={filteredApps.length}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+      />
+
       {/* Selected Application Detail */}
       {selectedApp && (
         <motion.div
@@ -722,9 +750,17 @@ function ApplicationsView({ getToken }) {
           <span className="material-symbols-outlined text-3xl text-text-secondary/30 mb-2">description</span>
           <p className="text-sm text-text-secondary">No applications yet. Save a job to get started.</p>
         </div>
+      ) : filteredApps.length === 0 ? (
+        <div className="bg-[#0A0A0F] border border-border rounded-xl p-8 text-center">
+          <span className="material-symbols-outlined text-3xl text-text-secondary/30 mb-2">search_off</span>
+          <p className="text-sm text-text-secondary">No matching applications</p>
+          <button onClick={clearSearch} className="mt-3 px-4 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary text-xs font-medium hover:bg-primary/20 transition-colors">
+            Clear Search
+          </button>
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {apps.map((app, i) => {
+          {filteredApps.map((app, i) => {
             const job = app.jobs || {}
             return (
               <motion.div
@@ -732,6 +768,7 @@ function ApplicationsView({ getToken }) {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
+                layout
                 className={`bg-[#0A0A0F] border rounded-xl p-4 hover:bg-white/[0.03] transition-all cursor-pointer ${selectedApp?.id === app.id ? 'border-primary/30' : 'border-border hover:border-primary/20'}`}
                 onClick={() => handleAppClick(app)}
               >
@@ -745,10 +782,14 @@ function ApplicationsView({ getToken }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-text truncate">{job.title || app.job_id}</h4>
+                      <h4 className="text-sm font-bold text-text truncate">
+                        {query ? <HighlightText text={job.title || app.job_id} query={query} /> : (job.title || app.job_id)}
+                      </h4>
                       {app.created_at && <span className="text-[10px] text-text-secondary/60 shrink-0">{getRelativeTime(app.created_at)}</span>}
                     </div>
-                    <p className="text-xs text-text-secondary truncate">{job.company}</p>
+                    <p className="text-xs text-text-secondary truncate">
+                      {query ? <HighlightText text={job.company} query={query} /> : job.company}
+                    </p>
                   </div>
                   <span className={`text-[10px] font-medium px-2 py-1 rounded-full border shrink-0 ${statusColors[app.status] || statusColors.saved}`}>
                     {app.status ? app.status.charAt(0).toUpperCase() + app.status.slice(1) : 'Saved'}
@@ -925,20 +966,6 @@ function AIRecommendationsView({ recommendedJobs, onGenerateRecommendations, gen
         </div>
 
         <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A1AA]/40 text-lg pointer-events-none">search</span>
-              <input
-                className="w-full bg-[#111114] border border-[#27272A] rounded-2xl py-2.5 pl-10 pr-14 text-sm text-white placeholder-[#A1A1AA]/40 outline-none focus:border-[#7C3AED]/40 transition-colors"
-                placeholder="Search jobs..."
-              />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-md bg-white/[0.04] border border-[#27272A] text-[10px] text-[#A1A1AA]/40 font-mono pointer-events-none">&#8984;K</kbd>
-            </div>
-            <button className="w-9 h-9 rounded-2xl bg-[#111114] border border-[#27272A] flex items-center justify-center hover:border-[#7C3AED]/30 transition-colors">
-              <span className="material-symbols-outlined text-lg text-[#A1A1AA]">filter_list</span>
-            </button>
-          </div>
-
           {jobs.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 12 }}
@@ -1672,6 +1699,8 @@ export default function DashboardPage() {
             generatingRecommendations={generating}
           />
         )
+      case 'auto-apply':
+        return <AutoApplyView />
       case 'profile':
         return <ProfileView getToken={getToken} />
       case 'settings':
@@ -1708,19 +1737,20 @@ export default function DashboardPage() {
           </AnimatePresence>
         </div>
 
-        {/* Footer */}
-        <footer className="flex flex-col md:flex-row justify-between items-center px-4 py-4 gap-3 border-t border-border mb-[80px] md:mb-0">
-          <div className="text-[11px] font-mono text-text-secondary/60">
-            AutoApply AI v1.0.0 &middot; Engineered for performance
-          </div>
-          <div className="flex gap-5">
-            {['Privacy', 'Terms', 'API Docs', 'Support'].map((link) => (
-              <a key={link} className="text-xs text-text-secondary/60 hover:text-primary transition-colors" href="#">
-                {link}
-              </a>
-            ))}
-          </div>
-        </footer>
+        {activeView !== 'auto-apply' && (
+          <footer className="flex flex-col md:flex-row justify-between items-center px-4 py-4 gap-3 border-t border-border mb-[80px] md:mb-0">
+            <div className="text-[11px] font-mono text-text-secondary/60">
+              AutoApply AI v1.0.0 &middot; Engineered for performance
+            </div>
+            <div className="flex gap-5">
+              {['Privacy', 'Terms', 'API Docs', 'Support'].map((link) => (
+                <a key={link} className="text-xs text-text-secondary/60 hover:text-primary transition-colors" href="#">
+                  {link}
+                </a>
+              ))}
+            </div>
+          </footer>
+        )}
       </main>
 
       {/* Mobile Bottom Tab Bar */}

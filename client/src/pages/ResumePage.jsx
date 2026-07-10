@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { getFreshToken } from '../utils/auth'
 import { getResume, uploadResume, viewResume, deleteResume, parseResume, applyParsedData } from '../services/resume'
+import { getCareerAnalysis, generateCareerAnalysis } from '../services/careerAnalysis'
 import Sidebar from '../components/Sidebar'
 import Topbar from '../components/Topbar'
 import ResumeCard from '../components/resume/ResumeCard'
@@ -31,6 +32,9 @@ export default function ResumePage() {
   const [parsing, setParsing] = useState(false)
   const [parsedData, setParsedData] = useState(null)
   const [accepting, setAccepting] = useState(false)
+  const [careerAnalysis, setCareerAnalysis] = useState(null)
+  const [careerAnalysisLoading, setCareerAnalysisLoading] = useState(false)
+  const [generatingAnalysis, setGeneratingAnalysis] = useState(false)
   const inputRef = useRef(null)
 
   const fetchResume = useCallback(async () => {
@@ -60,9 +64,40 @@ export default function ResumePage() {
     }
   }, [getToken, isLoaded, isSignedIn, navigate])
 
+  const fetchCareerAnalysis = useCallback(async () => {
+    if (!isLoaded || !isSignedIn) return
+    setCareerAnalysisLoading(true)
+    try {
+      const token = await getFreshToken(getToken)
+      const data = await getCareerAnalysis(token)
+      setCareerAnalysis(data)
+    } catch (err) {
+      if (err.message === 'Not Found' || err.message === 'Career analysis not found') {
+        setCareerAnalysis(null)
+      }
+    } finally {
+      setCareerAnalysisLoading(false)
+    }
+  }, [getToken, isLoaded, isSignedIn])
+
+  const handleGenerateAnalysis = useCallback(async () => {
+    setGeneratingAnalysis(true)
+    setError(null)
+    try {
+      const token = await getFreshToken(getToken)
+      await generateCareerAnalysis(token)
+      await fetchCareerAnalysis()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setGeneratingAnalysis(false)
+    }
+  }, [getToken, fetchCareerAnalysis])
+
   useEffect(() => {
     fetchResume()
-  }, [fetchResume])
+    fetchCareerAnalysis()
+  }, [fetchResume, fetchCareerAnalysis])
 
   const handleUpload = async (file) => {
     setUploading(true)
@@ -249,7 +284,12 @@ export default function ResumePage() {
                       accepting={accepting}
                     />
                     <div className="mt-5">
-                      <CareerIntelligenceCard />
+                      <CareerIntelligenceCard
+                        analysis={careerAnalysis}
+                        loading={careerAnalysisLoading}
+                        onGenerate={handleGenerateAnalysis}
+                        generating={generatingAnalysis}
+                      />
                     </div>
                   </>
                 )}

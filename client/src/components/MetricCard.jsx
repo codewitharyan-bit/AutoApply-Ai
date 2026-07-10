@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import Tooltip from './Tooltip'
 
 const sparklines = {
   primary: [40, 55, 48, 62, 58, 70, 65, 78, 72, 85, 80, 92],
@@ -19,7 +19,6 @@ const descriptions = {
 }
 
 export default function MetricCard({ label, value, icon, trend, trendLabel, color = 'primary', index = 0 }) {
-  const [showTooltip, setShowTooltip] = useState(false)
   const sparkData = sparklines[color] || sparklines.primary
   const maxVal = Math.max(...sparkData)
   const minVal = Math.min(...sparkData)
@@ -51,8 +50,6 @@ export default function MetricCard({ label, value, icon, trend, trendLabel, colo
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
       className="bg-[#0A0A0F] border border-border rounded-xl p-3 hover:bg-white/[0.03] hover:border-primary/20 transition-all relative overflow-hidden group"
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
     >
       <div className="absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-12 -mt-12 opacity-[0.03] bg-primary group-hover:opacity-[0.06] transition-opacity" />
 
@@ -66,14 +63,11 @@ export default function MetricCard({ label, value, icon, trend, trendLabel, colo
               {trend}
             </span>
           )}
-          <button className="relative text-text-secondary/40 hover:text-text-secondary/60 transition-colors">
-            <span className="material-symbols-outlined text-[14px]">info</span>
-            {showTooltip && desc && (
-              <div className="absolute top-full right-0 mt-1 w-56 p-2 rounded-lg bg-[#1a1a23] border border-border text-[10px] text-text-secondary leading-relaxed shadow-xl z-20 pointer-events-none">
-                {desc}
-              </div>
-            )}
-          </button>
+          <Tooltip content={desc} id={`metric-${label}`}>
+            <button type="button" className="relative text-text-secondary/40 hover:text-text-secondary/60 transition-colors">
+              <span className="material-symbols-outlined text-[14px]">info</span>
+            </button>
+          </Tooltip>
         </div>
       </div>
 

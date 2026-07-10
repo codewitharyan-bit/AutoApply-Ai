@@ -14,6 +14,7 @@ import DashboardPage from './pages/DashboardPage'
 import ApplicationsPage from './pages/ApplicationsPage'
 import JobDetailPage from './pages/JobDetailPage'
 import ResumePage from './pages/ResumePage'
+import { TooltipProvider } from './contexts/TooltipContext'
 
 function HomePage() {
   return (
@@ -34,7 +35,8 @@ function HomePage() {
 
 function App() {
   return (
-    <Routes>
+    <TooltipProvider>
+      <Routes>
       <Route path="/" element={<HomePage />} />
       <Route
         path="/sign-in"
@@ -141,6 +143,19 @@ function App() {
         }
       />
       <Route
+        path="/auto-apply"
+        element={
+          <>
+            <SignedIn>
+              <DashboardPage />
+            </SignedIn>
+            <SignedOut>
+              <SignInPage />
+            </SignedOut>
+          </>
+        }
+      />
+      <Route
         path="/profile"
         element={
           <>
@@ -154,6 +169,7 @@ function App() {
         }
       />
     </Routes>
+    </TooltipProvider>
   )
 }
 
