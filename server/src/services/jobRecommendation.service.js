@@ -309,6 +309,19 @@ const generateRecommendations = async (clerkId) => {
   });
 };
 
+const getRecommendationsByUser = async (clerkId) => {
+  const user = await getUserByClerkId(clerkId);
+
+  const { data, error } = await supabase
+    .from('job_recommendations')
+    .select('job_id, match_score, matched_skills, missing_skills, recommendation_reason')
+    .eq('user_id', user.id);
+
+  if (error) throw error;
+  return data || [];
+};
+
 module.exports = {
   generateRecommendations,
+  getRecommendationsByUser,
 };

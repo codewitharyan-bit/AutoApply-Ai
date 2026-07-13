@@ -1,0 +1,2 @@
+ALTER TABLE auto_apply_queue
+ADD COLUMN IF NOT EXISTS attempt_count INTEGER NOT NULL DEFAULT 0;

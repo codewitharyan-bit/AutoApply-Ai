@@ -13,7 +13,10 @@ const resumeRoutes = require("./routes/resume.route");
 const recommendationRoutes = require("./routes/recommendation.route");
 const careerAnalysisRoutes = require("./routes/careerAnalysis.route");
 const autoApplyRoutes = require('./routes/autoApply.route');
-
+const matchingRoutes = require('./routes/matching.route');
+const queueRoutes = require('./routes/queue.route');
+const workerRoutes = require('./routes/worker.route');
+const activityRoutes = require('./routes/activity.route');
 
 
 const app = express()
@@ -40,6 +43,10 @@ app.use("/api/resume", resumeRoutes);
 app.use( "/api/recommendations",recommendationRoutes);
 app.use("/api/career-analysis", careerAnalysisRoutes);
 app.use('/api/auto-apply', autoApplyRoutes);
+app.use('/api/auto-apply', matchingRoutes);
+app.use('/api/auto-apply/queue', queueRoutes);
+app.use('/api/auto-apply/worker', workerRoutes);
+app.use('/api/auto-apply/activity', activityRoutes);
 
 app.get(
   '/api/health',

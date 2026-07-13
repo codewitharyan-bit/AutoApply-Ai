@@ -1,11 +1,19 @@
 import { motion } from 'framer-motion'
 
-const PLACEHOLDER_ENTRIES = [
-  { type: 'success', icon: 'check_circle', text: 'Job matched' },
-  { type: 'success', icon: 'check_circle', text: 'Added to queue' },
-  { type: 'success', icon: 'check_circle', text: 'Application submitted' },
-  { type: 'error', icon: 'cancel', text: 'Application failed' },
-]
+const EVENT_STYLES = {
+  queued: { icon: 'queue', color: 'text-text-secondary' },
+  started: { icon: 'play_circle', color: 'text-blue-400' },
+  completed: { icon: 'check_circle', color: 'text-emerald-400' },
+  failed: { icon: 'cancel', color: 'text-rose-400' },
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  const hh = String(d.getHours()).padStart(2, '0')
+  const mm = String(d.getMinutes()).padStart(2, '0')
+  return `${hh}:${mm}`
+}
 
 export default function ActivitySection({ items = [], loading = false }) {
   return (
@@ -25,35 +33,25 @@ export default function ActivitySection({ items = [], loading = false }) {
               <span className="material-symbols-outlined text-2xl text-primary">history</span>
             </div>
             <p className="text-sm text-text-secondary">No activity yet</p>
-            <p className="text-xs text-text-secondary/60 mt-1">When automation starts you'll see</p>
-          </div>
-          <div className="flex flex-col gap-3 max-w-sm mx-auto">
-            {PLACEHOLDER_ENTRIES.map((entry, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className={`material-symbols-outlined text-base ${entry.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {entry.icon}
-                </span>
-                <span className={`text-xs ${entry.type === 'success' ? 'text-emerald-400/70' : 'text-rose-400/70'}`}>
-                  {entry.text}
-                </span>
-              </div>
-            ))}
+            <p className="text-xs text-text-secondary/60 mt-1">Queue a job or run the worker to see events</p>
           </div>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {items.map((item, i) => (
-            <div key={i} className="bg-[#0A0A0F] border border-border rounded-xl p-4 flex items-center gap-3">
-              <span className={`material-symbols-outlined text-lg ${item.type === 'success' ? 'text-emerald-400' : item.type === 'skipped' ? 'text-amber-400' : 'text-rose-400'}`}>
-                {item.type === 'success' ? 'check_circle' : item.type === 'skipped' ? 'skip_next' : 'cancel'}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-text">{item.company}</p>
-                <p className="text-xs text-text-secondary">{item.message}</p>
+          {items.map((item) => {
+            const style = EVENT_STYLES[item.event] || { icon: 'circle', color: 'text-text-secondary' }
+            return (
+              <div key={item.id} className="bg-[#0A0A0F] border border-border rounded-xl p-4 flex items-center gap-3">
+                <span className={`material-symbols-outlined text-lg ${style.color}`}>
+                  {style.icon}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-text">{item.message}</p>
+                </div>
+                <span className="text-[10px] text-text-secondary/60 shrink-0">{formatTime(item.createdAt)}</span>
               </div>
-              {item.time && <span className="text-[10px] text-text-secondary/60 shrink-0">{item.time}</span>}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </motion.div>

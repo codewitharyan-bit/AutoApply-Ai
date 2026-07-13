@@ -7,6 +7,18 @@ const STATUS_MAP = {
   error: { label: 'Error', color: 'bg-rose-400' },
 }
 
+function timeAgo(dateStr) {
+  if (!dateStr) return null
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const sec = Math.floor(diff / 1000)
+  if (sec < 60) return `${sec} sec ago`
+  const min = Math.floor(sec / 60)
+  if (min < 60) return `${min} min ago`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr} hr ago`
+  return new Date(dateStr).toLocaleDateString()
+}
+
 function EngineField({ label, value, status }) {
   return (
     <div>
@@ -23,10 +35,11 @@ function EngineField({ label, value, status }) {
   )
 }
 
-export default function AutomationEngineCard({ engine }) {
+export default function AutomationEngineCard({ engine, testResult }) {
   const statusInfo = STATUS_MAP[engine?.status] || STATUS_MAP.offline
   const dailyLimit = engine?.dailyLimit || 10
   const usagePct = dailyLimit > 0 ? Math.min(((engine?.usageToday || 0) / dailyLimit) * 100, 100) : 0
+  const meta = testResult?.meta
 
   return (
     <motion.div
@@ -50,6 +63,13 @@ export default function AutomationEngineCard({ engine }) {
           </div>
         </div>
       </div>
+      {meta && (
+        <div className="mt-4 pt-3 border-t border-border flex gap-4 text-[11px] text-text-secondary/60">
+          <span>Engine v{meta.engineVersion}</span>
+          {meta.generatedAt && <span>Generated {timeAgo(meta.generatedAt)}</span>}
+          <span>{meta.executionTimeMs} ms execution</span>
+        </div>
+      )}
     </motion.div>
   )
 }

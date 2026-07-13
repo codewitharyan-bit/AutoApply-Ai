@@ -5,12 +5,13 @@ const STEPS = [
   { key: 'submit', label: 'Submit', icon: 'rocket_launch' },
 ]
 
-function getStepState(engine) {
-  const status = engine?.status || 'offline'
-  if (status === 'offline') return { prefs: 'idle', match: 'idle', queue: 'idle', submit: 'idle' }
-  if (status === 'running') return { prefs: 'done', match: 'done', queue: 'active', submit: 'idle' }
-  if (status === 'paused') return { prefs: 'done', match: 'done', queue: 'paused', submit: 'idle' }
-  return { prefs: 'done', match: 'done', queue: 'done', submit: 'done' }
+function getStepState({ workflowState, testResult, testLoading, workerState }) {
+  return {
+    preferences: workflowState.scanStarted ? 'done' : 'idle',
+    matching: testLoading ? 'active' : testResult ? 'done' : 'idle',
+    queue: workflowState.queued ? 'done' : 'idle',
+    submit: workerState?.state === 'running' ? 'active' : workflowState.submitted ? 'done' : 'idle',
+  }
 }
 
 const stateStyles = {
@@ -40,10 +41,8 @@ const stateStyles = {
   },
 }
 
-export default function AutomationLifecycle({ engine }) {
-  const states = getStepState(engine)
-
-  const stepKeys = ['preferences', 'matching', 'queue', 'submit']
+export default function AutomationLifecycle({ workflowState, testResult, testLoading, workerState }) {
+  const states = getStepState({ workflowState, testResult, testLoading, workerState })
 
   return (
     <div className="bg-[#0A0A0F] border border-border rounded-xl p-4">
